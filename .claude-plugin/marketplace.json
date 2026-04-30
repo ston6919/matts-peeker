@@ -1,7 +1,7 @@
 {
   "name": "matts-peeker",
   "metadata": {
-    "description": "Matt's Peeker: video analysis with /peek invocation, Super Data transcript support, and clean output packaging."
+    "description": "Matt's Peeker: video analysis with /peek, transcripts (captions, Deepgram, Super Data), and clean output packaging."
   },
   "owner": {
     "name": "Matt Penny"

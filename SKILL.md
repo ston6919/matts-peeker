@@ -22,7 +22,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/peeker.py" --source "<url-or-file>" --quest
 
 - Works with public video URLs and local video files.
 - Uses `yt-dlp` and `ffmpeg` for acquisition and frame extraction.
-- Supports transcript retrieval from Super Data API.
+- Supports transcript retrieval: free captions via `yt-dlp` first, then Deepgram on stripped audio, then Super Data.
 - Produces a clean output package for follow-up analysis:
   - `report.json`
   - `report.md`
@@ -35,11 +35,22 @@ Environment variables:
 - `SUPERDATA_API_KEY`
 - `SUPERDATA_API_BASE_URL` (optional, default `https://api.superdata.ai`)
 
-When configured, transcript retrieval uses Super Data first.
+When configured, Super Data is used only if captions and Deepgram did not produce a transcript.
 
-## Fallback behavior
+## Deepgram API support
 
-If Super Data transcript is unavailable, the skill tries subtitle extraction via `yt-dlp`.
+Environment variables:
+
+- `DEEPGRAM_API_KEY`
+- `DEEPGRAM_MODEL` (optional, default `nova-2`)
+
+Deepgram runs only on **audio stripped from the video** (mono 16 kHz WAV via `ffmpeg`), never on the raw video file.
+
+## Transcript order
+
+1. For `http`/`https` sources: English captions via `yt-dlp` when available (no API cost).
+2. Deepgram on stripped audio when step 1 yields no transcript and `DEEPGRAM_API_KEY` is set.
+3. Super Data when steps 1–2 yield no transcript and `SUPERDATA_API_KEY` is set.
 
 ## Good usage examples
 

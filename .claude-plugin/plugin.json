@@ -1,7 +1,7 @@
 {
   "name": "peek",
   "version": "0.1.0",
-  "description": "Matt's Peeker analyzes video input with frame extraction, Super Data transcript retrieval, and packaged report outputs.",
+  "description": "Matt's Peeker analyzes video input with frame extraction, transcripts (captions, then Deepgram, then Super Data), and packaged report outputs.",
   "author": {
     "name": "Matt Penny"
   },
@@ -13,6 +13,7 @@
     "analysis",
     "frames",
     "transcript",
-    "superdata"
+    "superdata",
+    "deepgram"
   ]
 }

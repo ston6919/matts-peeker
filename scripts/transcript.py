@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+import os
 import re
 import subprocess
 
+from audio import extract_audio_for_transcription
 from common import TranscriptSegment
+from deepgram import transcribe_wav_with_deepgram
 from superdata import fetch_superdata_transcript
 
 
@@ -69,24 +72,39 @@ def _download_subtitles(url: str, out_dir: Path) -> list[Path]:
     return sorted(out_dir.glob("subs*.vtt"))
 
 
-def get_transcript(video_source: str, working_dir: Path) -> list[TranscriptSegment]:
-    # Primary: Super Data API
-    segments = fetch_superdata_transcript(video_source)
-    if segments:
-        return segments
+def _transcribe_via_deepgram(video_file: Path, working_dir: Path) -> list[TranscriptSegment]:
+    """Always strip audio with ffmpeg, then send WAV to Deepgram."""
+    if not os.getenv("DEEPGRAM_API_KEY"):
+        return []
 
-    # Fallback: Native/auto captions for URL sources
+    audio_path = working_dir / "peeker_transcription_audio.wav"
+    try:
+        extract_audio_for_transcription(video_file, audio_path)
+        return transcribe_wav_with_deepgram(audio_path)
+    except subprocess.CalledProcessError:
+        return []
+
+
+def get_transcript(video_source: str, working_dir: Path, video_file: Path) -> list[TranscriptSegment]:
+    # 1) Free path first: English captions via yt-dlp (URL sources only).
     if video_source.startswith("http://") or video_source.startswith("https://"):
         subtitle_dir = working_dir / "subtitle_tmp"
         subtitle_dir.mkdir(parents=True, exist_ok=True)
         try:
             vtt_files = _download_subtitles(video_source, subtitle_dir)
         except subprocess.CalledProcessError:
-            return []
+            vtt_files = []
 
-        out: list[TranscriptSegment] = []
+        caption_segments: list[TranscriptSegment] = []
         for vtt_file in vtt_files:
-            out.extend(_parse_vtt_file(vtt_file))
-        return out
+            caption_segments.extend(_parse_vtt_file(vtt_file))
+        if caption_segments:
+            return caption_segments
 
-    return []
+    # 2) Deepgram on ffmpeg-stripped audio (mono WAV, no video).
+    deepgram_segments = _transcribe_via_deepgram(video_file, working_dir)
+    if deepgram_segments:
+        return deepgram_segments
+
+    # 3) Super Data last.
+    return fetch_superdata_transcript(video_source)
