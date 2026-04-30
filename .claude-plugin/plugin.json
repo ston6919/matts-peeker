@@ -1,0 +1,18 @@
+{
+  "name": "peek",
+  "version": "0.1.0",
+  "description": "Matt's Peeker analyzes video input with frame extraction, Super Data transcript retrieval, and packaged report outputs.",
+  "author": {
+    "name": "Matt Penny"
+  },
+  "homepage": "https://github.com/ston6919/matts-peeker",
+  "repository": "https://github.com/ston6919/matts-peeker",
+  "license": "MIT",
+  "keywords": [
+    "video",
+    "analysis",
+    "frames",
+    "transcript",
+    "superdata"
+  ]
+}
