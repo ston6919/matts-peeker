@@ -30,6 +30,10 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/peeker.py" --source "<url-or-file>" --quest
   - `report.md`
   - `agent_context.txt`
 
+## API keys (setup)
+
+Do **not** store API keys inside this skill’s files or commit them to git. The CLI reads **environment variables** only (for example add `export ...` lines to `~/.zshrc` on Mac). For a full table of variables, what each one does, and copy-paste examples, open the repository **`README.md`**.
+
 ## OpenRouter (vision) support
 
 Environment variables:

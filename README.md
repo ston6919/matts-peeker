@@ -1,9 +1,10 @@
 # Matt's Peeker
 
-A fresh skill that helps an agent inspect videos by combining:
+A skill that helps an agent inspect videos by combining:
 
 - downloaded/local video access
-- extracted timestamped frames
+- extracted timestamped frames (one frame per second by default)
+- OpenRouter vision descriptions for each frame (Gemini 2.5 Flash by default)
 - transcript retrieval (free captions via `yt-dlp` first, then Deepgram on stripped audio, then Super Data)
 - a clean output package for reuse
 
@@ -13,9 +14,10 @@ A fresh skill that helps an agent inspect videos by combining:
 
 1. Resolve source (public URL or local file).
 2. Download the video for URL sources using `yt-dlp`.
-3. Extract representative frames with `ffmpeg`.
-4. Pull transcript: English captions via `yt-dlp` for URLs first, then Deepgram on **ffmpeg-stripped** mono WAV, then Super Data if still empty.
-5. Build a clean report package (`report.json`, `report.md`, and `agent_context.txt`).
+3. Extract frames with `ffmpeg` (default: one frame per second; capped by `--max-frames`).
+4. Optionally describe each frame via **OpenRouter** (vision) when `OPENROUTER_API_KEY` is set.
+5. Pull transcript: English captions via `yt-dlp` for URLs first, then Deepgram on **ffmpeg-stripped** mono WAV, then Super Data if still empty.
+6. Build a clean report package (`report.json`, `report.md`, and `agent_context.txt`).
 
 ## Requirements
 
@@ -23,12 +25,42 @@ A fresh skill that helps an agent inspect videos by combining:
 - `yt-dlp` on PATH
 - `ffmpeg` on PATH
 
-Optional:
+## API keys — where they go
 
-- `SUPERDATA_API_KEY`
-- `SUPERDATA_API_BASE_URL` (defaults to `https://api.superdata.ai`)
-- `DEEPGRAM_API_KEY` (speech-to-text when captions do not yield a transcript)
-- `DEEPGRAM_MODEL` (optional, default `nova-2`)
+**Do not** commit keys into this repo or paste them into skill files. The scripts only read **environment variables** when you run `peeker.py`.
+
+### Variables
+
+| Purpose | Environment variable | Required? |
+|--------|------------------------|-----------|
+| Frame image descriptions (OpenRouter / Gemini) | `OPENROUTER_API_KEY` | Optional; without it, runs still work but frames have no AI descriptions |
+| Different vision model on OpenRouter | `OPENROUTER_MODEL` | Optional; default is `google/gemini-2.5-flash` |
+| How many frames to send per vision API call | `OPENROUTER_VISION_BATCH_SIZE` | Optional; default `8` |
+| Transcript when captions are missing or empty | `DEEPGRAM_API_KEY` | Optional |
+| Deepgram model | `DEEPGRAM_MODEL` | Optional; default `nova-2` |
+| Last-resort transcript API | `SUPERDATA_API_KEY` | Optional |
+| Super Data base URL | `SUPERDATA_API_BASE_URL` | Optional; default `https://api.superdata.ai` |
+
+### How to set them (Mac / zsh)
+
+Add exports to **`~/.zshrc`**, save, then open a **new** terminal or run `source ~/.zshrc`:
+
+```bash
+export OPENROUTER_API_KEY="your-openrouter-key"
+export DEEPGRAM_API_KEY="your-deepgram-key"           # if you need Deepgram
+export SUPERDATA_API_KEY="your-superdata-key"       # if you need Super Data
+# Optional overrides:
+# export OPENROUTER_MODEL="google/gemini-2.5-flash"
+# export OPENROUTER_VISION_BATCH_SIZE="8"
+# export DEEPGRAM_MODEL="nova-2"
+# export SUPERDATA_API_BASE_URL="https://api.superdata.ai"
+```
+
+Only set the keys you actually use. For picture descriptions alone, **`OPENROUTER_API_KEY`** is the important one.
+
+### Claude Code / Cursor
+
+Install or symlink this skill where your agent expects it, but **keys still come from the shell environment** of the process that runs Python. If the agent runs in a GUI without your normal shell profile, ensure those variables are defined for that environment (or run `peeker.py` from a terminal where you have already exported the keys).
 
 ## Quick start
 
@@ -49,19 +81,6 @@ Example intent mapping:
 
 - `/peek https://www.youtube.com/watch?v=... what happens at 00:30?`
 
-## Super Data API key
-
-Set environment variables before running:
-
-```bash
-export SUPERDATA_API_KEY="your_key_here"
-export SUPERDATA_API_BASE_URL="https://api.superdata.ai"   # optional
-export DEEPGRAM_API_KEY="your_deepgram_key_here"           # optional
-# export DEEPGRAM_MODEL="nova-2"                           # optional
-```
-
-To persist in zsh, put those exports in `~/.zshrc` and run `source ~/.zshrc`.
-
 Local file example:
 
 ```bash
@@ -75,7 +94,7 @@ python3 scripts/peeker.py \
 
 Each run creates:
 
-- `report.json` - structured timeline + metadata
+- `report.json` - structured timeline + metadata (includes frame descriptions when vision ran)
 - `report.md` - human-friendly summary package
 - `agent_context.txt` - compact context text for AI agents
 - `frames/` - extracted JPEG frames
@@ -87,4 +106,3 @@ Each run creates:
 - If there is still no transcript and `DEEPGRAM_API_KEY` is set, the script strips audio with `ffmpeg` and sends WAV to Deepgram.
 - If there is still no transcript and `SUPERDATA_API_KEY` is set, the script asks Super Data last.
 - This project is intentionally lightweight and uses Python stdlib only.
-
