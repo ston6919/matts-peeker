@@ -1,0 +1,21 @@
+{
+  "name": "matts-peeker",
+  "metadata": {
+    "description": "Matt's Peeker: video analysis with /peek invocation, Super Data transcript support, and clean output packaging."
+  },
+  "owner": {
+    "name": "Matt Penny"
+  },
+  "plugins": [
+    {
+      "name": "peek",
+      "description": "Inspect a video URL or local file and create reusable timeline + transcript report artifacts.",
+      "author": {
+        "name": "Matt Penny"
+      },
+      "source": "./",
+      "category": "productivity",
+      "homepage": "https://github.com/ston6919/matts-peeker"
+    }
+  ]
+}

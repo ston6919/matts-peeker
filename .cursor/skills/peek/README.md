@@ -1,0 +1,93 @@
+# Matt's Peeker
+
+A fresh skill that helps an agent inspect videos by combining:
+
+- downloaded/local video access
+- extracted timestamped frames
+- transcript retrieval (Super Data API first, local fallback second)
+- a clean output package for reuse
+
+## What this project does
+
+`peeker.py` runs an end-to-end flow:
+
+1. Resolve source (public URL or local file).
+2. Download the video for URL sources using `yt-dlp`.
+3. Extract representative frames with `ffmpeg`.
+4. Pull transcript from Super Data API (if configured), then fallback to subtitle scraping.
+5. Build a clean report package (`report.json`, `report.md`, and `agent_context.txt`).
+
+## Requirements
+
+- Python 3.10+
+- `yt-dlp` on PATH
+- `ffmpeg` on PATH
+
+Optional:
+
+- `SUPERDATA_API_KEY`
+- `SUPERDATA_API_BASE_URL` (defaults to `https://api.superdata.ai`)
+
+## Quick start
+
+```bash
+python3 scripts/peeker.py \
+  --source "https://www.youtube.com/watch?v=dQw4w9WgXcQ" \
+  --question "What happens around 00:30?" \
+  --out-dir "./runs/demo"
+```
+
+## Claude invocation
+
+This skill is configured as user-invocable command:
+
+- `/peek`
+
+Example intent mapping:
+
+- `/peek https://www.youtube.com/watch?v=... what happens at 00:30?`
+
+## Super Data API key
+
+Set environment variables before running:
+
+```bash
+export SUPERDATA_API_KEY="your_key_here"
+export SUPERDATA_API_BASE_URL="https://api.superdata.ai"   # optional
+```
+
+To persist in zsh, put those exports in `~/.zshrc` and run `source ~/.zshrc`.
+
+Local file example:
+
+```bash
+python3 scripts/peeker.py \
+  --source "~/Movies/sample.mp4" \
+  --question "When does the UI break?" \
+  --out-dir "./runs/local-demo"
+```
+
+## Output package
+
+Each run creates:
+
+- `report.json` - structured timeline + metadata
+- `report.md` - human-friendly summary package
+- `agent_context.txt` - compact context text for AI agents
+- `frames/` - extracted JPEG frames
+- `transcript.json` - transcript segments with timestamps
+
+## Notes
+
+- Super Data transcript fetch is attempted first when credentials are present.
+- If Super Data is unavailable, the script tries subtitle extraction via `yt-dlp`.
+- This project is intentionally lightweight and uses Python stdlib only.
+
+## Failure policy (no guessing)
+
+- If video acquisition fails (download blocked, private or geo-restricted source, missing local file, or frame extraction failure), stop and return a failure message.
+- Do not answer video-content questions from memory, web lookup, or generic reasoning when acquisition fails.
+- The failure response should state: "I could not access the video source, so I cannot verify what happens at that timestamp."
+- Include the blocking reason from the tool error and ask for an accessible source (for example, a direct video file).
+- If `report.json` and extracted frames are not produced, do not provide a content answer about the video.
+
