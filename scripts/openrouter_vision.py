@@ -124,7 +124,7 @@ def _describe_batch(
         headers={
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key}",
-            "HTTP-Referer": "https://github.com/peeker-local",
+            "HTTP-Referer": "https://github.com/ston6919/matts-peeker",
             "X-Title": "Matt's Peeker",
         },
         method="POST",

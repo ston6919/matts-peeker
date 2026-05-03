@@ -4,7 +4,7 @@ A fresh skill that helps an agent inspect videos by combining:
 
 - downloaded/local video access
 - extracted timestamped frames
-- transcript retrieval (Super Data API first, local fallback second)
+- transcript retrieval (free captions via `yt-dlp` first, then Deepgram on stripped audio, then Super Data)
 - a clean output package for reuse
 
 ## What this project does
@@ -14,7 +14,7 @@ A fresh skill that helps an agent inspect videos by combining:
 1. Resolve source (public URL or local file).
 2. Download the video for URL sources using `yt-dlp`.
 3. Extract representative frames with `ffmpeg`.
-4. Pull transcript from Super Data API (if configured), then fallback to subtitle scraping.
+4. Pull transcript: English captions via `yt-dlp` for URLs first, then Deepgram on **ffmpeg-stripped** mono WAV, then Super Data if still empty.
 5. Build a clean report package (`report.json`, `report.md`, and `agent_context.txt`).
 
 ## Requirements
@@ -27,6 +27,8 @@ Optional:
 
 - `SUPERDATA_API_KEY`
 - `SUPERDATA_API_BASE_URL` (defaults to `https://api.superdata.ai`)
+- `DEEPGRAM_API_KEY` (speech-to-text when captions do not yield a transcript)
+- `DEEPGRAM_MODEL` (optional, default `nova-2`)
 
 ## Quick start
 
@@ -54,6 +56,8 @@ Set environment variables before running:
 ```bash
 export SUPERDATA_API_KEY="your_key_here"
 export SUPERDATA_API_BASE_URL="https://api.superdata.ai"   # optional
+export DEEPGRAM_API_KEY="your_deepgram_key_here"           # optional
+# export DEEPGRAM_MODEL="nova-2"                           # optional
 ```
 
 To persist in zsh, put those exports in `~/.zshrc` and run `source ~/.zshrc`.
@@ -79,15 +83,8 @@ Each run creates:
 
 ## Notes
 
-- Super Data transcript fetch is attempted first when credentials are present.
-- If Super Data is unavailable, the script tries subtitle extraction via `yt-dlp`.
+- For URL sources, English subtitles via `yt-dlp` are tried first (no API cost when captions exist).
+- If there is still no transcript and `DEEPGRAM_API_KEY` is set, the script strips audio with `ffmpeg` and sends WAV to Deepgram.
+- If there is still no transcript and `SUPERDATA_API_KEY` is set, the script asks Super Data last.
 - This project is intentionally lightweight and uses Python stdlib only.
-
-## Failure policy (no guessing)
-
-- If video acquisition fails (download blocked, private or geo-restricted source, missing local file, or frame extraction failure), stop and return a failure message.
-- Do not answer video-content questions from memory, web lookup, or generic reasoning when acquisition fails.
-- The failure response should state: "I could not access the video source, so I cannot verify what happens at that timestamp."
-- Include the blocking reason from the tool error and ask for an accessible source (for example, a direct video file).
-- If `report.json` and extracted frames are not produced, do not provide a content answer about the video.
 

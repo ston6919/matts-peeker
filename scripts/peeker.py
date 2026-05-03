@@ -43,11 +43,11 @@ def resolve_video_file(source: str, working_dir: Path) -> Path:
 
 def print_env_hints() -> None:
     if not os.getenv("DEEPGRAM_API_KEY"):
-        print("[hint] DEEPGRAM_API_KEY not set. Deepgram transcript step will be skipped.")
+        print("[hint] DEEPGRAM_API_KEY not set; Deepgram step skipped after captions.")
     if not os.getenv("SUPERDATA_API_KEY"):
-        print("[hint] SUPERDATA_API_KEY not set. Super Data transcript fallback will be skipped.")
+        print("[hint] SUPERDATA_API_KEY not set; Super Data fallback disabled.")
     if not os.getenv("OPENROUTER_API_KEY"):
-        print("[hint] OPENROUTER_API_KEY not set. Frame vision descriptions will be skipped.")
+        print("[hint] OPENROUTER_API_KEY not set; frame vision descriptions skipped.")
 
 
 def main() -> int:
@@ -77,7 +77,7 @@ def main() -> int:
         described = sum(1 for d in frame_descriptions if d)
         print(f"[ok] frame_descriptions={described}/{len(frames)}")
 
-        transcript_segments = get_transcript(args.source, video_file, working_dir)
+        transcript_segments = get_transcript(args.source, working_dir, video_file)
         print(f"[ok] transcript_segments={len(transcript_segments)}")
 
         report = build_report_package(
